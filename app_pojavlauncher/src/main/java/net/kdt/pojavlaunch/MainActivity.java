@@ -109,6 +109,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     @Nullable
     private RectF inputAreaRect;
     private int imeHeight;
+    private net.kdt.pojavlaunch.utils.ImeShortcutStrip imeShortcutStrip;
     private boolean hasOngoingImeAnimation;
 
     MinecraftProfile minecraftProfile;
@@ -175,6 +176,8 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         MCOptionUtils.addMCOptionListener(optionListener);
         mControlLayout.setModifiable(false);
 
+        imeShortcutStrip = new net.kdt.pojavlaunch.utils.ImeShortcutStrip(this);
+
         // Listen to IME insets animation
         ViewCompat.setWindowInsetsAnimationCallback(contentFrame, new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
             @Override
@@ -196,6 +199,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                 if ((animation.getTypeMask() & WindowInsetsCompat.Type.ime()) != 0) {
                     hasOngoingImeAnimation = false;
+                    imeShortcutStrip.update(imeHeight);
                 }
             }
         });
@@ -204,6 +208,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             if (!hasOngoingImeAnimation) {
                 imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                 refreshImeTranslation();
+                imeShortcutStrip.update(imeHeight);
             }
             return insets;
         });
@@ -376,6 +381,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     protected void onStop() {
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_VISIBLE, 0);
         net.kdt.pojavlaunch.utils.ServerListSync.flush();
+        if (imeShortcutStrip != null) imeShortcutStrip.dismiss();
         super.onStop();
     }
 
@@ -383,6 +389,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     protected void onDestroy() {
         super.onDestroy();
         net.kdt.pojavlaunch.utils.ServerListSync.stopWatching();
+        if (imeShortcutStrip != null) imeShortcutStrip.dismiss();
         CallbackBridge.removeGrabListener(touchpad);
         CallbackBridge.removeGrabListener(minecraftGLView);
         ContextExecutor.clearActivity();
