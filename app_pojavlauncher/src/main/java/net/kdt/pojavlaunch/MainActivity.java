@@ -109,7 +109,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     @Nullable
     private RectF inputAreaRect;
     private int imeHeight;
-    private net.kdt.pojavlaunch.utils.ImeShortcutStrip imeShortcutStrip;
+    private net.kdt.pojavlaunch.utils.NotchPanel notchPanel;
     private boolean hasOngoingImeAnimation;
 
     MinecraftProfile minecraftProfile;
@@ -124,6 +124,8 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // The notch strip is reserved for the side panel: the game is never drawn under it
+        LauncherPreferences.PREF_IGNORE_NOTCH = false;
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
@@ -176,7 +178,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         MCOptionUtils.addMCOptionListener(optionListener);
         mControlLayout.setModifiable(false);
 
-        imeShortcutStrip = new net.kdt.pojavlaunch.utils.ImeShortcutStrip(this);
+        notchPanel = new net.kdt.pojavlaunch.utils.NotchPanel(this);
 
         // Listen to IME insets animation
         ViewCompat.setWindowInsetsAnimationCallback(contentFrame, new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
@@ -199,7 +201,6 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                 if ((animation.getTypeMask() & WindowInsetsCompat.Type.ime()) != 0) {
                     hasOngoingImeAnimation = false;
-                    imeShortcutStrip.update(imeHeight);
                 }
             }
         });
@@ -208,7 +209,6 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             if (!hasOngoingImeAnimation) {
                 imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                 refreshImeTranslation();
-                imeShortcutStrip.update(imeHeight);
             }
             return insets;
         });
@@ -381,7 +381,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     protected void onStop() {
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_VISIBLE, 0);
         net.kdt.pojavlaunch.utils.ServerListSync.flush();
-        if (imeShortcutStrip != null) imeShortcutStrip.dismiss();
+        if (notchPanel != null) notchPanel.dismiss();
         super.onStop();
     }
 
@@ -389,7 +389,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     protected void onDestroy() {
         super.onDestroy();
         net.kdt.pojavlaunch.utils.ServerListSync.stopWatching();
-        if (imeShortcutStrip != null) imeShortcutStrip.dismiss();
+        if (notchPanel != null) notchPanel.dismiss();
         CallbackBridge.removeGrabListener(touchpad);
         CallbackBridge.removeGrabListener(minecraftGLView);
         ContextExecutor.clearActivity();
@@ -404,6 +404,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         // post.
         mControlLayout.requestLayout();
         mControlLayout.post(()->{
+            if (notchPanel != null) notchPanel.show();
             // Child of mControlLayout, so refreshing size here is correct
             Tools.setFullscreen(this, setFullscreen());
             minecraftGLView.refreshSize();
@@ -411,6 +412,11 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             mControlLayout.refreshControlButtonPositions();
             touchControllerInputView.setSize(minecraftGLView.getWidth(), minecraftGLView.getHeight());
         });
+    }
+
+    @Override
+    protected boolean shouldIgnoreNotch() {
+        return false;
     }
 
     @Override
@@ -729,6 +735,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         }
         super.onWindowFocusChanged(hasFocus);
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_FOCUSED, hasFocus ? 1 : 0);
+        if (hasFocus && notchPanel != null) getWindow().getDecorView().post(notchPanel::show);
     }
 
     @Override
