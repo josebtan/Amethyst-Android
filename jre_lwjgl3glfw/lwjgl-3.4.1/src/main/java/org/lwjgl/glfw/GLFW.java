@@ -1318,6 +1318,8 @@ public class GLFW
             mGLFWIsInputReady = true;
             CallbackBridge.nativeSetInputReady(true);
         }
+        // Show the on-screen keyboard when a text field of the game gets the focus
+        TextFieldWatcher.poll();
         // During interactions with UI elements, Minecraft likes to update the screen as events related to those inputs arrive.
         // This leads to calls to glfwPollEvents within glfwPollEvents, which is not good for our queue system.
         // Prevent these with this code.

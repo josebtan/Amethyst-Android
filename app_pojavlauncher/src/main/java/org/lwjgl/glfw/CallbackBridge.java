@@ -232,6 +232,7 @@ public class CallbackBridge {
 
     // Notification actions for NOTIF_TYPE_TEXT_FIELD
     public static final int ACTION_TEXT_FIELD_HOVER = 0;
+    public static final int ACTION_TEXT_FIELD_FOCUS = 1;
 
     // Notification actions
     public static final int ACTION_INIT_LAUNCHER_INTEGRATION = 0;
@@ -253,6 +254,15 @@ public class CallbackBridge {
                     sTextFieldHovered = hovered;
                     // El cursor pasó a "texto": se enfocó o se tocó un cuadro de texto
                     if (hovered) sUiHandler.post(MainActivity::showKeyboard);
+                    return true;
+                }
+                if (action != null && action.length >= 2 && action[0] == ACTION_TEXT_FIELD_FOCUS) {
+                    // A text field of the game gained (or lost) the focus: show (or hide) the keyboard
+                    if (action[1] != 0) sUiHandler.post(MainActivity::showKeyboard);
+                    else sUiHandler.post(() -> {
+                        if (MainActivity.touchCharInput != null && MainActivity.touchCharInput.hasFocus())
+                            MainActivity.touchCharInput.disable();
+                    });
                     return true;
                 }
                 return false;

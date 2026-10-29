@@ -26,6 +26,7 @@ public class CallbackBridge {
     // Cuadros de texto: el cursor I-beam de Minecraft indica que hay un campo de texto bajo el dedo
     public static final int TEXT_FIELD = 1;
     public static final int TEXT_FIELD_HOVER = 0;
+    public static final int TEXT_FIELD_FOCUS = 1;
 
     public static boolean sGamepadDirectEnabled;
     
