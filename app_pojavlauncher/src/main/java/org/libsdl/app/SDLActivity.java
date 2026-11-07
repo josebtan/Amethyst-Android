@@ -1201,9 +1201,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      */
     public static void setOrientation(int w, int h, boolean resizable, String hint)
     {
-        if (mSingleton != null) {
-            setOrientationBis(w, h, resizable, hint);
-        }
+        // Amethyst is always landscape (sensorLandscape in the manifest). Games such as Minecraft 26.3
+        // create small hidden portrait windows first (e.g. 320x480); honoring them would rotate the
+        // activity to portrait, so the orientation requested by SDL is ignored.
     }
 
     /**

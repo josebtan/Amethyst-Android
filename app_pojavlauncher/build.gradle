@@ -105,6 +105,13 @@ android {
         targetSdkVersion 34
         versionCode 10000000
         versionName getVersionName()
+
+        // Auto-update source: the GitHub release that CI publishes for this branch (build-<branch>).
+        // Empty for local builds, which disables the update check.
+        def ciRepo = System.getenv("GITHUB_REPOSITORY") ?: ""
+        def ciBranch = (System.getenv("GITHUB_REF_NAME") ?: "").replace("/", "-")
+        buildConfigField "String", "UPDATE_REPO", "\"${ciRepo}\""
+        buildConfigField "String", "UPDATE_TAG", ciBranch.isEmpty() ? "\"\"" : "\"build-${ciBranch}\""
         multiDexEnabled true //important
         resValue 'string', 'curseforge_api_key', getCFApiKey()
         externalNativeBuild {

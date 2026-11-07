@@ -304,6 +304,8 @@ public class LauncherActivity extends BaseActivity {
 
 
         IconCacheJanitor.runJanitor();
+        // Looks for a newer build in the GitHub repo and offers to install it
+        net.kdt.pojavlaunch.utils.UpdateChecker.checkAsync(this, false);
         mRequestNotificationPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isAllowed -> {

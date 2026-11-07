@@ -353,4 +353,13 @@
     <string name="modloader_dl_install_neoforge">Crear perfil de Neoforge</string>
     <string name="neoforge_dl_select_version">Seleccionar versión de NeoForge</string>
     <string name="neoforge_dl_no_installer">Lo sentimos, pero esta versión de NeoForge no tiene un instalador, lo cual aún no está soportado.</string>
+
+    <!-- Actualización automática -->
+    <string name="update_available_title">Actualización disponible</string>
+    <string name="update_available_message">Hay una versión más nueva del launcher (%1$s, %2$s MB).\n\n¿Descargarla e instalarla ahora?</string>
+    <string name="update_now">Actualizar</string>
+    <string name="update_later">Más tarde</string>
+    <string name="update_downloading">Descargando actualización…</string>
+    <string name="update_download_failed">No se pudo descargar la actualización: %1$s</string>
+    <string name="update_install_failed">No se pudo instalar la actualización: %1$s</string>
 </resources>
