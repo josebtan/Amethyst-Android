@@ -122,6 +122,41 @@ static JNI_OnLoad_t get_jni_onload_wrapper(
     return NULL;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Minecraft 26.3+ (RenderPearl) checks that glGetError resolved through LWJGL and through
+// SDL_GL_GetProcAddress is the very same function. LWJGL gets GL functions with dlsym() on the
+// renderer library (-Dorg.lwjgl.opengl.libname), while SDL asks the EGL library for them, which
+// can hand out a different pointer, so the game aborts with "glGetError mismatch".
+// To make both agree, SDL_GL_GetProcAddress is replaced (for gl* symbols) by a lookup in the same
+// renderer library that LWJGL uses (the launcher exports it as SDL_OPENGL_LIBRARY).
+// ---------------------------------------------------------------------------------------------
+typedef void *(*gl_getprocaddress_func_t)(const char *);
+
+static gl_getprocaddress_func_t real_SDL_GL_GetProcAddress = NULL;
+static void *g_renderer_gl_handle = NULL;
+static int g_renderer_gl_handle_tried = 0;
+
+static void *amethyst_SDL_GL_GetProcAddress(const char *proc) {
+    if (proc != NULL && proc[0] == 'g' && proc[1] == 'l') {
+        if (!g_renderer_gl_handle_tried) {
+            g_renderer_gl_handle_tried = 1;
+            const char *renderer_lib = getenv("SDL_OPENGL_LIBRARY");
+            if (renderer_lib != NULL && renderer_lib[0] != '\0') {
+                g_renderer_gl_handle = dlopen(renderer_lib, RTLD_LAZY | RTLD_NOLOAD);
+                if (g_renderer_gl_handle == NULL)
+                    g_renderer_gl_handle = dlopen(renderer_lib, RTLD_LAZY);
+                LOGI("Amethyst-Android: SDL_GL_GetProcAddress now resolves GL functions from %s (handle %p)",
+                     renderer_lib, g_renderer_gl_handle);
+            }
+        }
+        if (g_renderer_gl_handle != NULL) {
+            void *symbol = dlsym(g_renderer_gl_handle, proc);
+            if (symbol != NULL) return symbol;
+        }
+    }
+    return real_SDL_GL_GetProcAddress != NULL ? real_SDL_GL_GetProcAddress(proc) : NULL;
+}
+
 void *custom_dlsym(void *handle, const char *symbol) {
     void *result = BYTEHOOK_CALL_PREV(
             custom_dlsym,
@@ -129,6 +164,14 @@ void *custom_dlsym(void *handle, const char *symbol) {
             handle,
             symbol);
     LibraryRedirect *redirect = get_redirect_by_handle(handle);
+    if ((redirect != NULL) && result != NULL && symbol != NULL
+        && strstr(redirect->library_name, "libSDL3") != NULL
+        && strcmp(symbol, "SDL_GL_GetProcAddress") == 0) {
+        real_SDL_GL_GetProcAddress = (gl_getprocaddress_func_t) result;
+        LOGI("Amethyst-Android: Intercepted dlsym on SDL_GL_GetProcAddress: %p", result);
+        BYTEHOOK_POP_STACK();
+        return (void *) amethyst_SDL_GL_GetProcAddress;
+    }
     if ((redirect != NULL) && strcmp(symbol, "JNI_OnLoad") == 0) {
         if (strstr(redirect->library_name, "libSDL3")) {
             redirect->jni_onload = (JNI_OnLoad_t) result;
